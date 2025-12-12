@@ -122,7 +122,6 @@ function loadLeaderboard(mode) {
     const total = Number(r[headerIndex["DailyTotal"]]) || 0;
 
     if (mode === "week") {
-      const dateStr = String(r[headerIndex["Date"]] || "").trim();
       const entryDate = parseLocalDate(r[headerIndex["Date"]]);
       if (!entryDate) continue;
       if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
@@ -175,17 +174,25 @@ function getMondayStart(d) {
 function parseLocalDate(value) {
   if (!value) return null;
 
-  // If it's already a Date-like string (e.g., "Fri Dec 12 2025 ...")
+  // If it's already a Date object (Apps Script sometimes returns this)
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value)) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+  }
+
+  // Try normal Date parsing (handles "Fri Dec 12 2025 ...")
   const d1 = new Date(value);
   if (!isNaN(d1)) {
     return new Date(d1.getFullYear(), d1.getMonth(), d1.getDate(), 0, 0, 0, 0);
   }
 
-  // If it's "YYYY-MM-DD"
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
+  // Fallback for "YYYY-MM-DD"
+  const s = String(value).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (!m) return null;
+
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0, 0);
 }
+
 
 }
 
