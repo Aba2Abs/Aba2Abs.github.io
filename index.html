@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Momentum</title>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #fafafa;
+  color: #111;
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+}
+h1 { text-align: center; }
+.card {
+  background: white;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: #000;
+  color: white;
+  font-size: 16px;
+  border-radius: 6px;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+}
+label {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Momentum</h1>
+
+<div class="card">
+  <input id="name" placeholder="Your name" />
+  <label>Weight lifting (6) <input type="checkbox" id="gym"></label>
+  <label>10k steps (4) <input type="checkbox" id="steps"></label>
+  <label>OMAD (5) <input type="checkbox" id="omad"></label>
+  <p><strong>Total today:</strong> <span id="total">0</span> / 15</p>
+  <button onclick="submitDay()">Submit</button>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZRRiqnFI0e_qMWqHt3GyFYioZV1Li-cJOYecEd1tRmALgZ-LQ73RVu_VYicyXLr2KNg/exec";
+
+function getWeek(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const week1 = new Date(d.getFullYear(),0,4);
+  return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
+function calcTotal() {
+  let total = 0;
+  if (gym.checked) total += 6;
+  if (steps.checked) total += 4;
+  if (omad.checked) total += 5;
+  document.getElementById("total").innerText = total;
+  return total;
+}
+
+gym.onchange = steps.onchange = omad.onchange = calcTotal;
+
+function submitDay() {
+  const name = document.getElementById("name").value.trim();
+  if (!name) return alert("Enter your name");
+
+  const today = new Date().toISOString().slice(0,10);
+  const payload = {
+    date: today,
+    week: getWeek(today),
+    player: name,
+    gym: gym.checked ? 1 : 0,
+    steps: steps.checked ? 1 : 0,
+    omad: omad.checked ? 1 : 0,
+    total: calcTotal()
+  };
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }).then(() => alert("Saved ✔"));
+}
+</script>
+
+</body>
+</html>
