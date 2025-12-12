@@ -175,7 +175,7 @@ function parseLocalDate(value) {
   if (!value) return null;
 
   // If it's already a Date object (Apps Script sometimes returns this)
-  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value)) {
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
   }
 
