@@ -59,6 +59,7 @@ h1 {
 <div class="toggle">
   <button id="weekBtn" class="active" onclick="loadLeaderboard('week')">This Week</button>
   <button id="allBtn" onclick="loadLeaderboard('all')">All Time</button>
+  <button id="dayBtn" class="toggle" onclick="loadLeaderboard('day')">Today</button>
 </div>
 
 <div id="list"></div>
@@ -107,12 +108,18 @@ function parseLocalDate(value) {
 function loadLeaderboard(mode) {
   document.getElementById("weekBtn").classList.toggle("active", mode === "week");
   document.getElementById("allBtn").classList.toggle("active", mode === "all");
+  document.getElementById("dayBtn").classList.toggle("active", mode === "day");
 
   const scores = {};
 
   const weekStart = getMondayStart(new Date());
   const nextWeekStart = new Date(weekStart);
   nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+  const todayStart = new Date();
+todayStart.setHours(0,0,0,0);
+const tomorrowStart = new Date(todayStart);
+tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+
 
   // Start at 1 to skip header row
   for (let i = 1; i < rows.length; i++) {
@@ -123,11 +130,19 @@ function loadLeaderboard(mode) {
 
     const total = Number(r[headerIndex["DailyTotal"]]) || 0;
 
-    if (mode === "week") {
-      const entryDate = parseLocalDate(r[headerIndex["Date"]]);
-      if (!entryDate) continue;
-      if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
-    }
+   if (mode === "day" || mode === "week") {
+  const entryDate = parseLocalDate(r[headerIndex["Date"]]);
+  if (!entryDate) continue;
+
+  if (mode === "day") {
+    if (entryDate < todayStart || entryDate >= tomorrowStart) continue;
+  }
+
+  if (mode === "week") {
+    if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
+  }
+}
+
 
     scores[player] = (scores[player] || 0) + total;
   }
@@ -160,7 +175,7 @@ function init() {
       headerIndex = {};
       headers.forEach((h, i) => headerIndex[String(h).trim()] = i);
 
-      loadLeaderboard("week");
+      loadLeaderboard("day");
     })
     .catch(err => {
       console.error(err);
