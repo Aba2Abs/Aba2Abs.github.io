@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Momentum – Leaderboard</title>
 
 <style>
@@ -9,9 +10,10 @@ body {
   font-family: system-ui, sans-serif;
   background: #fafafa;
   color: #111;
-  max-width: 420px;
-  margin: auto;
-  padding: 20px;
+max-width: 520px;
+margin: 0 auto;
+padding: 20px;
+
 }
 
 h1 {
@@ -156,6 +158,12 @@ h1 {
   color: #666;
 }
 
+@media (max-width: 520px) {
+  body {
+    max-width: 100%;
+    padding: 16px;
+  }
+}
 
   
 </style>
@@ -242,6 +250,16 @@ function parseLocalDate(value) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
   }
 
+  // If it's an ISO string like "2025-12-22T05:00:00.000Z"
+  // Treat it as a DATE (YYYY-MM-DD) to avoid timezone day-shift.
+  if (typeof value === "string") {
+    const iso = /^(\d{4})-(\d{2})-(\d{2})T/.exec(value);
+    if (iso) {
+      return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 0, 0, 0, 0);
+    }
+  }
+
+  
   // If it's a string like "Fri Dec 12 2025 ..."
   const d1 = new Date(value);
   if (!isNaN(d1.getTime())) {
