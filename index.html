@@ -206,7 +206,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSJZhFjzOd9YMHerhHRUrVyJYsH5QvFQwu_ZP_l7gix1xLr3Mr9-sdjTY203H3dF23cg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgLfgAXom6gv4L3yC6wjhrKzzhRsDtJI0Gbez8PB7Byg0RVvSczzhW0wYbDb-4A_mu3A/exec";
 
 function getWeek(date) {
   const d = new Date(date);
@@ -225,15 +225,6 @@ function calcTotal() {
   return total;
 }
 
-function getLocalISODate() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-  
 gym.onchange = steps.onchange = omad.onchange = calcTotal;
 
 const NAME_KEY = "momentum_name";
@@ -288,9 +279,8 @@ setIdentityUI(name);
   btn.textContent = "Saving…";
   status.textContent = "";
 
-  const today = getLocalISODate();
+  const today = new Date().toISOString().slice(0,10);
   const payload = {
-    mode: "upsert",
     date: today,
     week: getWeek(today),
     player: name,
@@ -301,19 +291,15 @@ setIdentityUI(name);
   };
 
   fetch(SCRIPT_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload)
-})
-  .then(r => r.json())
-  .then(out => {
-    const msg = out.action === "updated" ? "Updated ✔" : "Saved ✔";
-    status.textContent = msg;
-    alert(msg);
-    setTimeout(() => status.textContent = "", 1600);
+    method: "POST",
+    body: JSON.stringify(payload)
   })
-  .catch(err => {
-    console.error(err);
+  .then(r => r.json().catch(() => ({})))
+  .then(() => {
+    status.textContent = "Saved ✔";
+    alert("Saved ✔");
+  })
+  .catch(() => {
     status.textContent = "Could not save — try again.";
     alert("Could not save — try again.");
   })
@@ -322,7 +308,6 @@ setIdentityUI(name);
     btn.disabled = false;
     btn.textContent = oldText;
   });
-
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -339,8 +324,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-
-  
 
   
 </script>
