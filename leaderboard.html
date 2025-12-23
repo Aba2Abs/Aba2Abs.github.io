@@ -250,16 +250,23 @@ if (mode === "day") {
   subtitle.textContent = "All-time points";
 }
 
-  const scores = {};
+  // --- weekly bonus settings (edit here) ---
+  const BONUS_OMAD_DAYS = 6;   // e.g. 6/7 days
+  const BONUS_OMAD_PTS  = 5;
+  const BONUS_GYM_DAYS  = 3;   // e.g. gym >= 3 days
+  const BONUS_GYM_PTS   = 6;
+
+  const baseScores = {};                 // player -> summed DailyTotal
+  const weeklyDays = {};                 // player -> { omad:Set, gym:Set }
 
   const weekStart = getMondayStart(new Date());
   const nextWeekStart = new Date(weekStart);
   nextWeekStart.setDate(nextWeekStart.getDate() + 7);
-  const todayStart = new Date();
-todayStart.setHours(0,0,0,0);
-const tomorrowStart = new Date(todayStart);
-tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
+  const todayStart = new Date();
+  todayStart.setHours(0,0,0,0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
   // Start at 1 to skip header row
   for (let i = 1; i < rows.length; i++) {
@@ -270,24 +277,58 @@ tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
     const total = Number(r[headerIndex["DailyTotal"]]) || 0;
 
-   if (mode === "day" || mode === "week") {
-  const entryDate = parseLocalDate(r[headerIndex["Date"]]);
-  if (!entryDate) continue;
+    // date filtering for day/week modes
+    let entryDate = null;
+    if (mode === "day" || mode === "week") {
+      entryDate = parseLocalDate(r[headerIndex["Date"]]);
+      if (!entryDate) continue;
 
-  if (mode === "day") {
-    if (entryDate < todayStart || entryDate >= tomorrowStart) continue;
+      if (mode === "day") {
+        if (entryDate < todayStart || entryDate >= tomorrowStart) continue;
+      }
+      if (mode === "week") {
+        if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
+      }
+    }
+
+    // base score always sums DailyTotal
+    baseScores[player] = (baseScores[player] || 0) + total;
+
+    // track weekly completion days (ONLY for weekly bonuses)
+    if (mode === "week") {
+      if (!weeklyDays[player]) {
+        weeklyDays[player] = { omad: new Set(), gym: new Set() };
+      }
+
+      const dayKey = entryDate.toISOString().slice(0,10); // yyyy-mm-dd stable key
+
+      const gym  = Number(r[headerIndex["Gym"]]) === 1;
+      const omad = Number(r[headerIndex["OMAD"]]) === 1;
+
+      if (gym)  weeklyDays[player].gym.add(dayKey);
+      if (omad) weeklyDays[player].omad.add(dayKey);
+    }
   }
 
+  // compute bonuses (weekly view only)
+  const bonusByPlayer = {};
   if (mode === "week") {
-    if (entryDate < weekStart || entryDate >= nextWeekStart) continue;
+    for (const [player, sets] of Object.entries(weeklyDays)) {
+      let bonus = 0;
+      if (sets.omad.size >= BONUS_OMAD_DAYS) bonus += BONUS_OMAD_PTS;
+      if (sets.gym.size  >= BONUS_GYM_DAYS)  bonus += BONUS_GYM_PTS;
+      bonusByPlayer[player] = bonus;
+    }
   }
-}
 
+  // ranked rows: include score + bonus so we can display it
+  const ranked = Object.entries(baseScores)
+    .map(([name, base]) => {
+      const bonus = (mode === "week") ? (bonusByPlayer[name] || 0) : 0;
+      return { name, base, bonus, score: base + bonus };
+    })
+    .sort((a, b) => b.score - a.score);
 
-    scores[player] = (scores[player] || 0) + total;
-  }
-
-  const ranked = Object.entries(scores).sort((a,b) => b[1] - a[1]);
 
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -297,13 +338,23 @@ tomorrowStart.setDate(tomorrowStart.getDate() + 1);
     return;
   }
 
-  ranked.forEach(([name, score], idx) => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.onclick = () => openHistory(name);
-    div.innerHTML = `<strong>#${idx+1} ${escapeHtml(name)}</strong><span>${score}</span>`;
-    list.appendChild(div);
-  });
+ranked.forEach((row, idx) => {
+  const div = document.createElement("div");
+  div.className = "card";
+  div.onclick = () => openHistory(row.name);
+
+  const bonusText =
+    (mode === "week" && row.bonus > 0)
+      ? `<span style="color:#666;font-weight:600;"> (+${row.bonus})</span>`
+      : "";
+
+  div.innerHTML = `
+    <strong>#${idx + 1} ${escapeHtml(row.name)}</strong>
+    <span>${row.score}${bonusText}</span>
+  `;
+  list.appendChild(div);
+});
+
 }
 
 function init() {
