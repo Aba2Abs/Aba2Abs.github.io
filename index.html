@@ -323,23 +323,6 @@ setIdentityUI(name);
     btn.textContent = oldText;
   });
 
-  .then(out => {
-    const msg = out.action === "updated" ? "Updated ✔" : "Saved ✔";
-    status.textContent = msg;
-    alert(msg);
-    setTimeout(() => status.textContent = "", 1600);
-  })
-  .catch(err => {
-    console.error(err);
-    status.textContent = "Could not save — try again.";
-    alert("Could not save — try again.");
-  })
-  .finally(() => {
-    isSubmitting = false;
-    btn.disabled = false;
-    btn.textContent = oldText;
-  });
-
 }
 
 document.addEventListener("DOMContentLoaded", () => {
